@@ -8,7 +8,7 @@ const server = http.createServer(app);
 const io = socketio(server);
 
 // ポート番号の設定
-const PORT = process.env.PORT || 443;
+const PORT = process.env.PORT || 80;
 
 // データベースの初期化
 const db = new sqlite3.Database('chat.db');
