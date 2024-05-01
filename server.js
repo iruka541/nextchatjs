@@ -13,7 +13,6 @@ const PORT = process.env.PORT || 80;
 // メッセージを保存するJSONファイルのパス
 const messagesFilePath = 'messages.json';
 
-// データベースの初期化
 let messages = [];
 
 // JSONファイルからメッセージを読み込む
