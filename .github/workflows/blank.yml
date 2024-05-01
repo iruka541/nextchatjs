@@ -22,4 +22,7 @@ jobs:
         run: npm install
 
       - name: Start server
-        run: node server.js
+        run: |
+          node server.js &
+          until nc -z localhost 3000; do sleep 1; done
+          echo "Server is up and running on port 3000"
