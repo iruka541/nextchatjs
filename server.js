@@ -1,7 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketio = require('socket.io');
-const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -10,16 +10,19 @@ const io = socketio(server);
 // ポート番号の設定
 const PORT = process.env.PORT || 80;
 
-// データベースの初期化
-const db = new sqlite3.Database('chat.db');
+// メッセージを保存するJSONファイルのパス
+const messagesFilePath = 'messages.json';
 
-// テーブルの作成
-db.run(`CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT,
-    message TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-)`);
+// データベースの初期化
+let messages = [];
+
+// JSONファイルからメッセージを読み込む
+try {
+    const data = fs.readFileSync(messagesFilePath, 'utf8');
+    messages = JSON.parse(data);
+} catch (err) {
+    console.error('Error reading messages from file:', err);
+}
 
 // 静的ファイルの提供
 app.use(express.static('public'));
@@ -29,26 +32,19 @@ io.on('connection', (socket) => {
     console.log('New WebSocket connection');
 
     // 過去のメッセージを送信
-    db.all('SELECT * FROM messages ORDER BY timestamp DESC LIMIT 20', (err, rows) => {
-        if (err) {
-            console.error('Error retrieving messages from database:', err);
-        } else {
-            // 最新のメッセージから古いメッセージへ
-            rows.reverse().forEach(row => {
-                socket.emit('message', { username: row.username, message: row.message });
-            });
-        }
+    messages.slice(-20).forEach(message => {
+        socket.emit('message', message);
     });
 
-    // 新しいメッセージを受信し、データベースに保存
+    // 新しいメッセージを受信し、JSONファイルに保存
     socket.on('message', (data) => {
-        const { username, message } = data;
-        db.run('INSERT INTO messages (username, message) VALUES (?, ?)', [username, message], (err) => {
+        messages.push(data);
+        fs.writeFile(messagesFilePath, JSON.stringify(messages), (err) => {
             if (err) {
-                console.error('Error inserting message into database:', err);
+                console.error('Error writing message to file:', err);
             }
         });
-        io.emit('message', { username, message });
+        io.emit('message', data);
     });
 
     // ユーザーが切断したときの処理
