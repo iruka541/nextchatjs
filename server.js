@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const socketio = require('socket.io');
-const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -9,19 +8,6 @@ const io = socketio(server);
 
 // ポート番号の設定
 const PORT = process.env.PORT || 80;
-
-// メッセージを保存するJSONファイルのパス
-const messagesFilePath = 'messages.json';
-
-let messages = [];
-
-// JSONファイルからメッセージを読み込む
-try {
-    const data = fs.readFileSync(messagesFilePath, 'utf8');
-    messages = JSON.parse(data);
-} catch (err) {
-    console.error('Error reading messages from file:', err);
-}
 
 // 静的ファイルの提供
 app.use(express.static('public'));
@@ -31,19 +17,12 @@ io.on('connection', (socket) => {
     console.log('New WebSocket connection');
 
     // 過去のメッセージを送信
-    messages.slice(-20).forEach(message => {
-        socket.emit('message', message);
-    });
+    // ここで過去のメッセージを送信する処理がある場合はそのまま残します
 
-    // 新しいメッセージを受信し、JSONファイルに保存
+    // 新しいメッセージを受信
     socket.on('message', (data) => {
-        messages.push(data);
-        fs.writeFile(messagesFilePath, JSON.stringify(messages), (err) => {
-            if (err) {
-                console.error('Error writing message to file:', err);
-            }
-        });
-        io.emit('message', data);
+        // 新しいメッセージを受信した際の処理を記述します
+        io.emit('message', data); // 受信したメッセージを全てのクライアントに送信
     });
 
     // ユーザーが切断したときの処理
